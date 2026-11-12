@@ -1,59 +1,72 @@
 
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-const items = [
-  {
-    title: "Next.js Fundamentals",
-    type: "Course",
-    description: "Learn Next.js App Router and React development.",
-  },
-  {
-    title: "Python Programming",
-    type: "Course",
-    description: "Learn Python programming and backend development.",
-  },
-  {
-    title: "Database Management",
-    type: "Course",
-    description: "Learn SQL and database management.",
-  },
-  {
-    title: "Git & GitHub",
-    type: "Course",
-    description: "Learn version control and collaboration.",
-  },
-  {
-    title: "InternHub Dashboard",
-    type: "Project",
-    description: "A learning management dashboard built with Next.js.",
-  },
-  {
-    title: "Flight Booking System",
-    type: "Project",
-    description: "A full-stack flight booking application.",
-  },
-  {
-    title: "Smart Task Manager",
-    type: "Project",
-    description: "An application to organize daily tasks.",
-  },
-  {
-    title: "Retail Management System",
-    type: "Project",
-    description: "A product and customer order management system.",
-  },
-];
+type SearchItem = {
+  id: string;
+  title: string;
+  type: "Course" | "Project";
+  description: string;
+};
 
 export default function SearchPage() {
   const [search, setSearch] = useState("");
+  const [items, setItems] = useState<SearchItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const filteredItems = items.filter((item) =>
-    `${item.title} ${item.type} ${item.description}`
-      .toLowerCase()
-      .includes(search.toLowerCase())
-  );
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function fetchItems() {
+      setLoading(true);
+      setError("");
+
+      try {
+        const params = new URLSearchParams();
+
+        if (search.trim()) {
+          params.set("q", search.trim());
+        }
+
+        const response = await fetch(
+          `/api/search?${params.toString()}`,
+          {
+            signal: controller.signal,
+          }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || "Search failed");
+        }
+
+        setItems(data.items);
+      } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") {
+          return;
+        }
+
+        setError(
+          error instanceof Error
+            ? error.message
+            : "Something went wrong"
+        );
+      } finally {
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
+      }
+    }
+
+    fetchItems();
+
+    return () => {
+      controller.abort();
+    };
+  }, [search]);
 
   return (
     <div>
@@ -85,13 +98,17 @@ export default function SearchPage() {
         />
 
         <p className="search-count">
-          {filteredItems.length} result(s) found
+          {loading ? "Searching..." : `${items.length} result(s) found`}
         </p>
 
         <div className="search-results">
-          {filteredItems.length > 0 ? (
-            filteredItems.map((item) => (
-              <div className="search-item" key={item.title}>
+          {error && (
+            <p className="no-results">{error}</p>
+          )}
+
+          {!loading && !error && items.length > 0 && (
+            items.map((item) => (
+              <div className="search-item" key={item.id}>
                 <div>
                   <h3>{item.title}</h3>
                   <p>{item.description}</p>
@@ -102,7 +119,9 @@ export default function SearchPage() {
                 </span>
               </div>
             ))
-          ) : (
+          )}
+
+          {!loading && !error && items.length === 0 && (
             <p className="no-results">
               No results found. Try another keyword.
             </p>

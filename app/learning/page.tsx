@@ -1,32 +1,46 @@
 
-const courses = [
-  {
-    title: "Next.js Fundamentals",
-    category: "Frontend Development",
-    progress: 75,
-    status: "In Progress",
-  },
-  {
-    title: "Python Programming",
-    category: "Backend Development",
-    progress: 90,
-    status: "In Progress",
-  },
-  {
-    title: "Database Management",
-    category: "Database",
-    progress: 100,
-    status: "Completed",
-  },
-  {
-    title: "Git & GitHub",
-    category: "Development Tools",
-    progress: 60,
-    status: "In Progress",
-  },
-];
+"use client";
+
+import { useEffect, useState } from "react";
+
+type Course = {
+  id: string;
+  title: string;
+  category: string;
+  description: string | null;
+};
 
 export default function LearningPage() {
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    async function fetchCourses() {
+      try {
+        const response = await fetch("/api/courses");
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || "Failed to load courses");
+        }
+
+        setCourses(data.courses);
+      } catch (error) {
+        setError(
+          error instanceof Error
+            ? error.message
+            : "Something went wrong"
+        );
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchCourses();
+  }, []);
+
   return (
     <div>
       <header className="topbar">
@@ -46,36 +60,40 @@ export default function LearningPage() {
 
       <section className="content-card">
         <h2>My Courses</h2>
-        <p>Here are the courses you are currently learning.</p>
+        <p>Explore the courses available on InternHub.</p>
 
-        <div className="course-list">
-          {courses.map((course) => (
-            <div className="course-card" key={course.title}>
-              <div className="course-header">
-                <div>
-                  <h3>{course.title}</h3>
-                  <p>{course.category}</p>
+        {loading && <p>Loading courses...</p>}
+
+        {error && (
+          <p className="auth-error">{error}</p>
+        )}
+
+        {!loading && !error && courses.length === 0 && (
+          <p>No courses available right now.</p>
+        )}
+
+        {!loading && !error && courses.length > 0 && (
+          <div className="course-list">
+            {courses.map((course) => (
+              <div className="course-card" key={course.id}>
+                <div className="course-header">
+                  <div>
+                    <h3>{course.title}</h3>
+                    <p>{course.category}</p>
+                  </div>
+
+                  <span className="course-status">
+                    Available
+                  </span>
                 </div>
 
-                <span className="course-status">
-                  {course.status}
-                </span>
+                {course.description && (
+                  <p>{course.description}</p>
+                )}
               </div>
-
-              <div className="progress-info">
-                <span>Progress</span>
-                <strong>{course.progress}%</strong>
-              </div>
-
-              <div className="progress-bar">
-                <div
-                  className="progress-fill"
-                  style={{ width: `${course.progress}%` }}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </section>
     </div>
   );

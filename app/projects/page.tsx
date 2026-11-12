@@ -1,32 +1,57 @@
 
-const projects = [
-  {
-    title: "InternHub Dashboard",
-    description: "A learning management dashboard built with Next.js.",
-    technology: "Next.js, TypeScript, CSS",
-    status: "In Progress",
-  },
-  {
-    title: "Flight Booking System",
-    description: "A full-stack application for managing flight bookings.",
-    technology: "NestJS, PostgreSQL, Next.js",
-    status: "Completed",
-  },
-  {
-    title: "Smart Task Manager",
-    description: "An application to organize and track daily tasks.",
-    technology: "React, Node.js",
-    status: "In Progress",
-  },
-  {
-    title: "Retail Management System",
-    description: "A system for managing products and customer orders.",
-    technology: "PHP, MySQL",
-    status: "Completed",
-  },
-];
+"use client";
+
+import { useEffect, useState } from "react";
+
+type Project = {
+  id: string;
+  title: string;
+  description: string;
+  technology: string;
+  status: "PLANNING" | "IN_PROGRESS" | "COMPLETED" | "ON_HOLD";
+};
 
 export default function ProjectsPage() {
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    async function fetchProjects() {
+      try {
+        const response = await fetch("/api/projects");
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || "Failed to load projects");
+        }
+
+        setProjects(data.projects);
+      } catch (error) {
+        setError(
+          error instanceof Error
+            ? error.message
+            : "Something went wrong"
+        );
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchProjects();
+  }, []);
+
+  function formatStatus(status: Project["status"]) {
+    const statusLabels: Record<Project["status"], string> = {
+      PLANNING: "Planning",
+      IN_PROGRESS: "In Progress",
+      COMPLETED: "Completed",
+      ON_HOLD: "On Hold",
+    };
+
+    return statusLabels[status];
+  }
+
   return (
     <div>
       <header className="topbar">
@@ -48,23 +73,33 @@ export default function ProjectsPage() {
         <h2>All Projects</h2>
         <p>Here are the projects in your workspace.</p>
 
-        <div className="project-grid">
-          {projects.map((project) => (
-            <div className="project-card" key={project.title}>
-              <h3>{project.title}</h3>
+        {loading && <p>Loading projects...</p>}
 
-              <p>{project.description}</p>
+        {error && <p className="auth-error">{error}</p>}
 
-              <div className="project-tech">
-                {project.technology}
+        {!loading && !error && projects.length === 0 && (
+          <p>No projects available right now.</p>
+        )}
+
+        {!loading && !error && projects.length > 0 && (
+          <div className="project-grid">
+            {projects.map((project) => (
+              <div className="project-card" key={project.id}>
+                <h3>{project.title}</h3>
+
+                <p>{project.description}</p>
+
+                <div className="project-tech">
+                  {project.technology}
+                </div>
+
+                <span className="project-status">
+                  {formatStatus(project.status)}
+                </span>
               </div>
-
-              <span className="project-status">
-                {project.status}
-              </span>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </section>
     </div>
   );
