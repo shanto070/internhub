@@ -110,7 +110,7 @@ export default function Dashboard() {
       </section>
 
       <section className="content-card">
-        <h2>Today's Learning Goals</h2>
+        <h2>Today&apos;s Learning Goals</h2>
         <p>Continue improving your development skills.</p>
 
         <ul className="goal-list">

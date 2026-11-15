@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 const navigation = [
-  { name: "Dashboard", href: "/", icon: "🏠" },
+  { name: "Dashboard", href: "/", icon: "📊" },
+  { name: "User Management", href: "/users", icon: "👥" },
   { name: "Learning", href: "/learning", icon: "📚" },
   { name: "Projects", href: "/projects", icon: "💻" },
   { name: "Search", href: "/search", icon: "🔎" },
